@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useWindowDimensions } from "../hooks/useWindowDimensions";
+import { useWindowDimensions } from "../../hooks/useWindowDimensions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 
@@ -45,7 +45,7 @@ function Nav() {
       >
         <SideBarMenus />
       </ReactModal>
-      <nav className="navigation">
+      <nav>
         {getMobileMenu()}
         <strong>SuperForum</strong>
       </nav>

@@ -1,23 +1,34 @@
-import React from "react";
-// import { Routes, Route } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
+import { useDispatch } from "react-redux";
 
 import "./App.css";
 
-import Main from "./components/Main";
-import Nav from "./components/Nav";
-import LeftMenu from "./components/LeftMenu";
-import SideBar from "./components/sidebar/SideBar";
-import RightMenu from "./components/RightMenu";
+import Home from "./components/routes/Home";
+import Thread from "./components/routes/thread/Thread";
+import UserProfile from "./components/routes/userProfile/UserProfile";
+import { UserProfileSetType } from "./store/user/Reducer";
 
 function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch({
+      type: UserProfileSetType,
+      payload: {
+        id: 1,
+        userName: "testUser",
+      },
+    });
+  }, [dispatch]);
+
   return (
-    <div className="App">
-      <Nav />
-      <SideBar />
-      <LeftMenu />
-      <Main />
-      <RightMenu />
-    </div>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/categorythreads/:categoryId" element={<Home />} />
+      <Route path="/thread/:id" element={<Thread />} />
+      <Route path="/userprofile/:id" element={<UserProfile />} />
+    </Routes>
   );
 }
 

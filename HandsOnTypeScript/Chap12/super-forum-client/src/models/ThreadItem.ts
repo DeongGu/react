@@ -1,5 +1,3 @@
-import Thread from "./Thread";
-
 export default class ThreadItem {
   constructor(
     public id: string,
