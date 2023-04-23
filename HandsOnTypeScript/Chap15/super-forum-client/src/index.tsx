@@ -8,6 +8,15 @@ import "./index.css";
 import App from "./App";
 import store from "./store/store";
 import reportWebVitals from "./reportWebVitals";
+import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
+
+const client = new ApolloClient({
+  uri: "http://localhost:5000/graphql",
+  credentials: "include",
+  cache: new InMemoryCache({
+    resultCaching: false,
+  }),
+});
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -16,7 +25,9 @@ root.render(
   <React.StrictMode>
     <Provider store={store}>
       <BrowserRouter>
-        <ErrorBoundary>{[<App key={"App"} />]}</ErrorBoundary>
+        <ApolloProvider client={client}>
+          <ErrorBoundary>{[<App key={"App"} />]}</ErrorBoundary>
+        </ApolloProvider>
       </BrowserRouter>
     </Provider>
   </React.StrictMode>

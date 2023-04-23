@@ -18,6 +18,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import "./RichEditor.css";
 
+export const getTextFromNodes = (nodes: Node[]) => {
+  return nodes.map((n: Node) => Node.string(n)).join("\n");
+};
+
 // https://docs.slatejs.org/concepts/12-typescript#defining-editor-element-and-text-types
 type CustomElement = { type: "paragraph"; children: CustomText[] };
 type CustomText = { text: string; bold?: true };
@@ -39,16 +43,22 @@ const HOTKEYS: { [keyName: string]: string } = {
 const initialValue = [
   {
     type: "paragraph",
-    children: [{ text: "Enter your post here." }],
+    children: [{ text: "" }],
   },
 ] as CustomElement[];
 const LIST_TYPES = ["numbered-list", "bulleted-list"];
 
-interface RichEditorProps {
+class RichEditorProps {
   existingBody?: string;
+  readOnly?: boolean = false;
+  sendOutBody?: (body: Node[]) => void;
 }
 
-const RichEditor: FC<RichEditorProps> = ({ existingBody }) => {
+const RichEditor: FC<RichEditorProps> = ({
+  existingBody,
+  readOnly,
+  sendOutBody,
+}) => {
   const [value, setValue] = useState<Node[]>(initialValue);
   const renderElement = useCallback((props: any) => <Element {...props} />, []);
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, []);
@@ -56,36 +66,34 @@ const RichEditor: FC<RichEditorProps> = ({ existingBody }) => {
 
   useEffect(() => {
     if (existingBody) {
-      setValue([
-        {
-          type: "paragraph",
-          text: existingBody,
-        },
-      ]);
+      setValue(JSON.parse(existingBody));
     }
-  }, []);
+  }, [existingBody]);
 
   const onChangeEditorValue = (val: Node[]) => {
     setValue(val);
+    sendOutBody && sendOutBody(val);
   };
 
   return (
     <Slate editor={editor} value={value} onChange={onChangeEditorValue}>
-      <Toolbar>
-        <MarkButton format="bold" icon="bold" />
-        <MarkButton format="italic" icon="italic" />
-        <MarkButton format="underline" icon="underlined" />
-        <MarkButton format="code" icon="code" />
-        <BlockButton format="heading-one" icon="header1" />
-        <BlockButton format="block-quote" icon="in_quotes" />
-        <BlockButton format="numbered-list" icon="list_numbered" />
-        <BlockButton format="bulleted-list" icon="list_bulleted" />
-      </Toolbar>
+      {readOnly ? null : (
+        <Toolbar>
+          <MarkButton format="bold" icon="bold" />
+          <MarkButton format="italic" icon="italic" />
+          <MarkButton format="underline" icon="underlined" />
+          <MarkButton format="code" icon="code" />
+          <BlockButton format="heading-one" icon="header1" />
+          <BlockButton format="block-quote" icon="in_quotes" />
+          <BlockButton format="numbered-list" icon="list_numbered" />
+          <BlockButton format="bulleted-list" icon="list_bulleted" />
+        </Toolbar>
+      )}
       <Editable
         className="editor"
         renderElement={renderElement}
         renderLeaf={renderLeaf}
-        placeholder="Enter some rich text…"
+        placeholder="Enter your post here."
         spellCheck
         autoFocus
         onKeyDown={(event) => {
@@ -97,6 +105,7 @@ const RichEditor: FC<RichEditorProps> = ({ existingBody }) => {
             }
           }
         }}
+        readOnly={readOnly}
       />
     </Slate>
   );

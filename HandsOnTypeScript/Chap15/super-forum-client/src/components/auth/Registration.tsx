@@ -1,47 +1,61 @@
-import { useReducer } from "react";
+import React, { FC, useReducer } from "react";
 import ReactModal from "react-modal";
 import "./Registration.css";
-
 import ModalProps from "../types/ModalProps";
 import userReducer from "./common/UserReducer";
 import { allowSubmit } from "./common/Helpers";
 import PasswordComparison from "./common/PasswordComparison";
+import { gql, useMutation } from "@apollo/client";
 
-function Registration({ isOpen, onClickToggle }: ModalProps) {
+const RegisterMutation = gql`
+  mutation register($email: String!, $userName: String!, $password: String!) {
+    register(email: $email, userName: $userName, password: $password)
+  }
+`;
+
+const Registration: FC<ModalProps> = ({ isOpen, onClickToggle }) => {
+  const [execRegister] = useMutation(RegisterMutation);
   const [
     { userName, password, email, passwordConfirm, resultMsg, isSubmitDisabled },
     dispatch,
   ] = useReducer(userReducer, {
-    userName: "dg",
+    userName: "davec",
     password: "",
-    email: "ssw4510@gmail.com",
+    email: "admin@dzhaven.com",
     passwordConfirm: "",
     resultMsg: "",
     isSubmitDisabled: true,
   });
 
   const onChangeUserName = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch({
-      payload: e.target.value,
-      type: "userName",
-    });
-
+    dispatch({ payload: e.target.value, type: "userName" });
     if (!e.target.value)
       allowSubmit(dispatch, "Username cannot be empty", true);
     else allowSubmit(dispatch, "", false);
   };
-
   const onChangeEmail = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch({ payload: e.target.value, type: "email" });
     if (!e.target.value) allowSubmit(dispatch, "Email cannot be empty", true);
     else allowSubmit(dispatch, "", false);
   };
 
-  const onClickRegister = (
+  const onClickRegister = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
   ) => {
     e.preventDefault();
-    onClickToggle(e);
+    try {
+      const result = await execRegister({
+        variables: {
+          email,
+          userName,
+          password,
+        },
+      });
+      console.log("register result", result);
+      dispatch({ payload: result.data.register, type: "resultMsg" });
+    } catch (ex) {
+      console.log(ex);
+    }
   };
 
   const onClickCancel = (
@@ -75,8 +89,8 @@ function Registration({ isOpen, onClickToggle }: ModalProps) {
             />
           </div>
         </div>
-        <div className="reg-buttons">
-          <div className="reg-btn-left">
+        <div className="form-buttons">
+          <div className="form-btn-left">
             <button
               style={{ marginLeft: ".5em" }}
               className="action-btn"
@@ -93,13 +107,13 @@ function Registration({ isOpen, onClickToggle }: ModalProps) {
               Close
             </button>
           </div>
-          <span className="reg-btn-right">
+          <span className="form-btn-right">
             <strong>{resultMsg}</strong>
           </span>
         </div>
       </form>
     </ReactModal>
   );
-}
+};
 
 export default Registration;

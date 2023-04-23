@@ -5,6 +5,7 @@ import {
 import { QueryArrayResult, QueryOneResult } from "./QueryArrayResult";
 import { Thread } from "./Thread";
 import { ThreadCategory } from "./ThreadCategory";
+import { ThreadItem } from "./ThreadItem";
 import { User } from "./User";
 
 export const createThread = async (
@@ -14,7 +15,6 @@ export const createThread = async (
   body: string
 ): Promise<QueryOneResult<Thread>> => {
   const titleMsg = isThreadTitleValid(title);
-
   if (titleMsg) {
     return {
       messages: [titleMsg],
@@ -33,7 +33,6 @@ export const createThread = async (
       messages: ["User not logged in."],
     };
   }
-
   const user = await User.findOne({
     where: {
       id: userId,
@@ -50,7 +49,6 @@ export const createThread = async (
       messages: ["category not found."],
     };
   }
-
   const thread = await Thread.create({
     title,
     body,
@@ -64,7 +62,7 @@ export const createThread = async (
   }
 
   return {
-    messages: ["Thread created successfully."],
+    messages: [thread.id],
   };
 };
 
@@ -89,6 +87,15 @@ export const getThreadById = async (
     };
   }
 
+  // extra sort
+  if (thread.threadItems) {
+    thread.threadItems.sort((a: ThreadItem, b: ThreadItem) => {
+      if (a.createdOn > b.createdOn) return -1;
+      if (a.createdOn < b.createdOn) return 1;
+      return 0;
+    });
+  }
+
   return {
     entity: thread,
   };
@@ -108,6 +115,26 @@ export const getThreadsByCategoryId = async (
   if (!threads || threads.length === 0) {
     return {
       messages: ["Threads of category not found."],
+    };
+  }
+  console.log(threads);
+  return {
+    entities: threads,
+  };
+};
+
+export const getThreadsLatest = async (): Promise<QueryArrayResult<Thread>> => {
+  const threads = await Thread.createQueryBuilder("thread")
+    .leftJoinAndSelect("thread.category", "category")
+    .leftJoinAndSelect("thread.user", "user")
+    .leftJoinAndSelect("thread.threadItems", "threadItems")
+    .orderBy("thread.createdOn", "DESC")
+    .take(10)
+    .getMany();
+
+  if (!threads || threads.length === 0) {
+    return {
+      messages: ["No threads found."],
     };
   }
   console.log(threads);

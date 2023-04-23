@@ -1,5 +1,6 @@
 import express from "express";
 import session from "express-session";
+import cors from "cors";
 import RedisStore from "connect-redis";
 import Redis from "ioredis";
 import { createConnection } from "typeorm";
@@ -17,6 +18,12 @@ require("dotenv").config();
 
 const main = async () => {
   const app = express();
+  app.use(
+    cors({
+      credentials: true,
+      origin: process.env.CLIENT_URL,
+    })
+  );
   const router = express.Router();
 
   await createConnection();
@@ -156,7 +163,7 @@ const main = async () => {
   });
 
   apolloServer.start().then(() => {
-    apolloServer.applyMiddleware({ app, cors: true });
+    apolloServer.applyMiddleware({ app, cors: false });
     httpServer.listen({ port: process.env.SERVER_PORT }, () => {
       console.log(
         `Server ready at http://localhost:${process.env.SERVER_PORT}${apolloServer.graphqlPath}`
