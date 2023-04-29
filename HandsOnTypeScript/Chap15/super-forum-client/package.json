@@ -42,8 +42,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "REACT_APP_GQL_URL=\"http://localhost:5000/graphql\" react-scripts start",
     "build": "react-scripts build",
+    "build-dev": "cross-env REACT_APP_GQL_URL=\"http://18.219.54.64/graphql\" react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -66,6 +67,7 @@
     ]
   },
   "devDependencies": {
-    "@types/react-modal": "^3.13.1"
+    "@types/react-modal": "^3.13.1",
+    "cross-env": "^7.0.3"
   }
 }

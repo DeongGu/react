@@ -1,20 +1,25 @@
 import express from "express";
 import session from "express-session";
-import cors from "cors";
-import RedisStore from "connect-redis";
+import connectRedis from "connect-redis";
 import Redis from "ioredis";
 import { createConnection } from "typeorm";
 import { register, login, logout } from "./repo/UserRepo";
 import bodyParser from "body-parser";
-import { createThread } from "./repo/ThreadRepo";
-import { getThreadsByCategoryId } from "./repo/ThreadRepo";
-
+import { ApolloServer } from "apollo-server-express";
+import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
 import http from "http";
 import { makeExecutableSchema } from "@graphql-tools/schema";
+import cors from "cors";
 import typeDefs from "./gql/typeDefs";
 import resolvers from "./gql/resolvers";
-import { ApolloServer } from "apollo-server-express";
-require("dotenv").config();
+import {
+  createThread,
+  getThreadById,
+  getThreadsByCategoryId,
+} from "./repo/ThreadRepo";
+
+import { loadEnv } from "./common/envLoader";
+loadEnv();
 
 const main = async () => {
   const app = express();
@@ -25,21 +30,20 @@ const main = async () => {
     })
   );
   const router = express.Router();
-
   await createConnection();
 
   const redis = new Redis({
     port: Number(process.env.REDIS_PORT),
     host: process.env.REDIS_HOST,
+    password: process.env.REDIS_PASSWORD,
   });
-
-  redis.connect().catch(console.error);
-
+  const RedisStore = connectRedis(session);
   const redisStore = new RedisStore({
     client: redis,
   });
 
   app.use(bodyParser.json());
+
   app.use(
     session({
       store: redisStore,
@@ -56,14 +60,15 @@ const main = async () => {
       },
     } as any)
   );
-
   app.use(router);
   router.post("/register", async (req, res, next) => {
     try {
       console.log("params", req.body);
-      const { email, userName, password } = req.body;
-      const userResult = await register(email, userName, password);
-
+      const userResult = await register(
+        req.body.email,
+        req.body.userName,
+        req.body.password
+      );
       if (userResult && userResult.user) {
         res.send(`new user created, userId: ${userResult.user.id}`);
       } else if (userResult && userResult.messages) {
@@ -71,47 +76,42 @@ const main = async () => {
       } else {
         next();
       }
-    } catch (err) {
-      res.send(err.messages);
+    } catch (ex) {
+      res.send(ex.message);
     }
   });
 
   router.post("/login", async (req, res, next) => {
     try {
       console.log("params", req.body);
-
-      const { userName, password } = req.body;
-
-      const userResult = await login(userName, password);
-
+      const userResult = await login(req.body.userName, req.body.password);
       if (userResult && userResult.user) {
         req.session!.userId = userResult.user?.id;
-        res.send(`user logged in, userId: ${req.session!.userId}`);
+        res.send(`user logged in, userId:
+    ${req.session!.userId}`);
       } else if (userResult && userResult.messages) {
         res.send(userResult.messages[0]);
       } else {
         next();
       }
-    } catch (err) {
-      res.send(err.message);
+    } catch (ex) {
+      res.send(ex.message);
     }
   });
 
   router.post("/logout", async (req, res, next) => {
     try {
       console.log("params", req.body);
-      const { userName } = req.body;
-      const msg = await logout(userName);
-
+      const msg = await logout(req.body.userName);
       if (msg) {
         req.session!.userId = null;
         res.send(msg);
       } else {
         next();
       }
-    } catch (err) {
-      console.log(err);
-      res.send(err.message);
+    } catch (ex) {
+      console.log(ex);
+      res.send(ex.message);
     }
   });
 
@@ -119,22 +119,33 @@ const main = async () => {
     try {
       console.log("userId", req.session);
       console.log("body", req.body);
-
-      const { categoryId, title, body } = req.body;
-
       const msg = await createThread(
-        req.session!.userId,
-        categoryId,
-        title,
-        body
+        req.session!.userId, // notice this is from session!
+        req.body.categoryId,
+        req.body.title,
+        req.body.body
       );
+
       res.send(msg);
-    } catch (err) {
-      console.log(err);
-      res.send(err.message);
+    } catch (ex) {
+      console.log(ex);
+      res.send(ex.message);
     }
   });
+  router.post("/thread", async (req, res, next) => {
+    try {
+      const threadResult = await getThreadById(req.body.id);
 
+      if (threadResult && threadResult.entity) {
+        res.send(threadResult.entity.title);
+      } else if (threadResult && threadResult.messages) {
+        res.send(threadResult.messages[0]);
+      }
+    } catch (ex) {
+      console.log(ex);
+      res.send(ex.message);
+    }
+  });
   router.post("/threadsbycategory", async (req, res, next) => {
     try {
       const threadResult = await getThreadsByCategoryId(req.body.categoryId);
@@ -154,16 +165,23 @@ const main = async () => {
       res.send(ex.message);
     }
   });
-
   const httpServer = http.createServer(app);
   const schema = makeExecutableSchema({ typeDefs, resolvers });
   const apolloServer = new ApolloServer({
     schema,
     context: ({ req, res }: any) => ({ req, res }),
+    plugins: [
+      ApolloServerPluginLandingPageLocalDefault({
+        embed: true,
+      }),
+    ],
   });
 
   apolloServer.start().then(() => {
-    apolloServer.applyMiddleware({ app, cors: false });
+    apolloServer.applyMiddleware({
+      app,
+      cors: false,
+    });
     httpServer.listen({ port: process.env.SERVER_PORT }, () => {
       console.log(
         `Server ready at http://localhost:${process.env.SERVER_PORT}${apolloServer.graphqlPath}`

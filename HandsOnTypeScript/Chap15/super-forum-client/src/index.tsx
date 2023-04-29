@@ -11,7 +11,7 @@ import reportWebVitals from "./reportWebVitals";
 import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
 
 const client = new ApolloClient({
-  uri: "http://localhost:5000/graphql",
+  uri: process.env.REACT_APP_GQL_URL,
   credentials: "include",
   cache: new InMemoryCache({
     resultCaching: false,

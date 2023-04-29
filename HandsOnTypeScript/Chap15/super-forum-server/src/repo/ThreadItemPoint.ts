@@ -1,11 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, ManyToOne, Column } from "typeorm";
 import { User } from "./User";
 import { ThreadItem } from "./ThreadItem";
 import { Auditable } from "./Auditable";
 
 @Entity({ name: "ThreadItemPoints" })
 export class ThreadItemPoint extends Auditable {
-  @PrimaryGeneratedColumn({ name: "Id", type: "bigint" })
+  @PrimaryGeneratedColumn({ name: "Id", type: "bigint" }) // for typeorm
   id: string;
 
   @Column("boolean", { name: "IsDecrement", default: false, nullable: false })

@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { isThreadBodyValid } from "../common/validators/ThreadValidators";
 import { QueryArrayResult, QueryOneResult } from "./QueryArrayResult";
 import { ThreadItem } from "./ThreadItem";
